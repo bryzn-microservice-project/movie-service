@@ -1,23 +1,20 @@
-package com.controller;
+package com;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SpringBootConsoleApplication
-        implements CommandLineRunner {
+public class SpringBootConsoleApplication implements CommandLineRunner {
 
-    private static Logger LOG = LoggerFactory
-            .getLogger(SpringBootConsoleApplication.class);
+    private static Logger LOG = LoggerFactory.getLogger(SpringBootConsoleApplication.class);
 
     public static void main(String[] args) {
-        LOG.info("STARTING THE [MOVIE-SERVICE]");
+        LOG.info("STARTING THE [SEATING-SERVICE]");
         SpringApplication.run(SpringBootConsoleApplication.class, args);
-        LOG.info("[MOVIE-SERVICE] FINISHED STARTING UP");
+        LOG.info("[SEATING-SERVICE] FINISHED STARTING UP");
     }
 
     @Override
