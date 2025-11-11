@@ -1,33 +1,47 @@
 package com.postgres.models;
 
 import java.time.LocalDateTime;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import com.topics.Movie.Genre;
+import jakarta.persistence.Table;
+import com.topics.MovieListRequest.Genre;
 
 @Entity
+@Table(name = "tickets", schema = "movie_service")
 public class MovieTicket {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "movie_name", nullable = false)
     private String movieName;
+
+    @Column(name = "showtime", nullable = false)
     private LocalDateTime showtime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "genre", nullable = false)
     private Genre genre;
-    private String seatNumber;
-    private Double price;
+
+    @Column(name = "seat", nullable = false)
+    private String seat;
+
+    @Column(name = "ticket_id", nullable = false)
+    private String ticketId;
 
     // for JPA only, no use
     public MovieTicket() {
     }
 
-    public MovieTicket(String movieName, LocalDateTime showtime, Genre genre, String seatNumber, Double price) {
+    public MovieTicket(String movieName, LocalDateTime showtime, Genre genre) {
         this.movieName = movieName;
         this.showtime = showtime;   
         this.genre = genre;
-        this.seatNumber = seatNumber;
-        this.price = price;
     }
 
     public Long getId() {
@@ -62,19 +76,19 @@ public class MovieTicket {
         this.showtime = showtime;
     }
 
-    public String getSeatNumber() {
-        return seatNumber;
+    public String getSeat() {
+        return seat;
     }
 
-    public void setSeatNumber(String seatNumber) {
-        this.seatNumber = seatNumber;
+    public void setSeat(String seat) {
+        this.seat = seat;
     }
 
-    public Double getPrice() {
-        return price;
+    public String getTicketId() {
+        return ticketId;
     }
 
-    public void setPrice(Double price) {
-        this.price = price;
+    public void setTicketId(String ticketId) {
+        this.ticketId = ticketId;
     }
 }

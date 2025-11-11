@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schema.SchemaValidator;
 
 // topic list
-import com.topics.MovieTicketRequest;
+import com.topics.CreateTicketRequest;
 import com.topics.MovieListRequest;
 
 /*
@@ -43,7 +43,7 @@ public class MainController {
      * Main entry point for processing incoming topics other microservices will use this enpoint
      */
     @PostMapping("/api/v1/processTopic")
-    public ResponseEntity<String> processRestTopics(@RequestBody String jsonString) {
+    public ResponseEntity<Object> processRestTopics(@RequestBody String jsonString) {
         LOG.info("Received an incoming topic... Processing now!");
         System.out.println("\n\nJSON: " + jsonString + "\n\n");
         JSONObject jsonNode = new JSONObject(jsonString);
@@ -62,16 +62,16 @@ public class MainController {
             LOG.error("No schema found for topic: " + topicName);
         }
 
-        ResponseEntity<String> response = null;
+        ResponseEntity<Object> response = null;
 
         if (schemaValidator.validateJson(schemaStream, jsonNode)) {
             ObjectMapper mapper = new ObjectMapper();
             try {
                 switch (jsonNode.getString("topicName")) {
-                    case "MovieTicketRequest": {
-                        MovieTicketRequest ticketRequest =
-                                mapper.readValue(jsonNode.toString(), MovieTicketRequest.class);
-                        response = businessLogic.processTicketRequest(ticketRequest);
+                    case "CreateTicketRequest": {
+                        CreateTicketRequest createTicketRequest =
+                                mapper.readValue(jsonNode.toString(), CreateTicketRequest.class);
+                        response = businessLogic.processTicketRequest(createTicketRequest);
                     }
                         break;
                     case "MovieListRequest": {

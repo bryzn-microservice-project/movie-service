@@ -12,9 +12,9 @@ public class SpringBootConsoleApplication implements CommandLineRunner {
     private static Logger LOG = LoggerFactory.getLogger(SpringBootConsoleApplication.class);
 
     public static void main(String[] args) {
-        LOG.info("STARTING THE [SEATING-SERVICE]");
+        LOG.info("STARTING THE [MOVIE-SERVICE]");
         SpringApplication.run(SpringBootConsoleApplication.class, args);
-        LOG.info("[SEATING-SERVICE] FINISHED STARTING UP");
+        LOG.info("[MOVIE-SERVICE] FINISHED STARTING UP");
     }
 
     @Override

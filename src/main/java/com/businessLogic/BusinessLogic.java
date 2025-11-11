@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClient;
 
 import com.topics.*;
 import com.topics.Movie.Genre;
-import com.topics.SeatResponse.Status;
+import jakarta.annotation.PostConstruct;
 import com.postgres.PostgresService;
 import com.postgres.models.MovieTicket;
 import com.postgres.models.Movies;
@@ -32,9 +32,35 @@ public class BusinessLogic {
 
     // REST Clients to communicate with other microservices
     private RestClient apiGatewayClient = RestClient.create();
+    private RestClient ticketingManagerClient = RestClient.create();
 
     private HashMap<String, RestClient> restRouter = new HashMap<>();
     private HashMap<RestClient, String> restEndpoints = new HashMap<>();
+
+    @Value("${api.gateway}")
+    private String apigateway;
+    @Value("${api.gateway.port}")
+    private String apigatewayPort;
+    private String agw;
+
+    @Value("${ticketing.manager}")
+    private String ticketManager;
+    @Value("${ticketing.manager.port}")
+    private String ticketManagerPort;
+    private String tm;
+
+    @PostConstruct
+    public void init() {
+        agw = "http://" + apigateway + ":" + apigatewayPort + "/api/v1/processTopic";
+        restEndpoints.put(apiGatewayClient, agw);
+        LOG.info("Business Logic initialized Api Gatway at: " + agw);
+        restRouter.put("MovieListResponse", apiGatewayClient);
+        restEndpoints.put(apiGatewayClient, agw);
+
+        tm = "http://" + ticketManager + ":" + ticketManagerPort + "/api/v1/ticket";
+        restEndpoints.put(ticketingManagerClient, tm);
+        LOG.info("AsyncLogic initialized with Ticketing Manager at: " + tm);
+    }
 
     public BusinessLogic(PostgresService postgresService) {
         this.postgresService = postgresService;
@@ -54,6 +80,7 @@ public class BusinessLogic {
     public void mapTopicsToClient() {
         restRouter.put("MovieListResponse", apiGatewayClient);
         restEndpoints.put(apiGatewayClient, "http://api-gateway:8081/api/v1/processTopic");
+        restEndpoints.put(ticketingManagerClient, "http://ticketing-manager:8088/api/v1/ticket");
         LOG.info("Sucessfully mapped the topics to their respective microservices...");
     }
 
@@ -61,34 +88,101 @@ public class BusinessLogic {
      * Request handlers for the various topics, which communicate through REST
      * clients
      */
-    public ResponseEntity<String> processTicketRequest(MovieTicketRequest movieRequest) {
+    public ResponseEntity<Object> processTicketRequest(CreateTicketRequest ticketRequest) {
         LOG.info("Received a MovieTicketRequest. ");
 
         // MovieTicket(String movieName, LocalDateTime showtime, Genre genre, String seatNumber, Double price)
-        LocalDateTime timeConversion = movieRequest.getMovie().getShowtime().toInstant()
+        LocalDateTime timeConversion = ticketRequest.getMovie().getShowtime().toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
 
-        MovieTicket movieTicket = new MovieTicket(
-                movieRequest.getMovie().getMovieName(),
+        Movies movie = new Movies(
+                ticketRequest.getMovie().getMovieName(),
                 timeConversion,
-                movieRequest.getMovie().getGenre(),
-                movieRequest.getSeatNumber(),
-                movieRequest.getPrice()
+                com.topics.MovieListRequest.Genre.valueOf(ticketRequest.getMovie().getGenre().name())
         );
 
+        // Check to see if the movie and showtime exist in the DB, then check if the seat is available
+        List<Movies> movieCheck = postgresService.findByMovieName(movie.getMovieName());
 
-        MovieTicket postgresSaveResponse = postgresService.save(movieTicket);
-        Status ticketStatus = postgresSaveResponse.getId() != null ? Status.CONFIRMED : Status.FAILED;
-        LOG.info("MovieRequest processed with status: " + ticketStatus);
+        // Default log message
+        String logMessage = "No move by the title " + movie.getMovieName() + " was found...";
+        for(Movies m : movieCheck) {
+            if(m.getShowtime().isEqual(movie.getShowtime())) {
+                LOG.info("The movie [" + movie.getMovieName() + "] found at the requested showtime " + movie.getShowtime());
+                LOG.info("Attempting to generate a new ticket number from the Ticketing Manager...");
+                ResponseEntity<String> ticketResponse = ticketingManagerClient
+                                    .post()
+                                    .uri(restEndpoints.get(ticketingManagerClient))
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .retrieve()
+                                    .toEntity(String.class);
+                                    
+                if(ticketResponse.getStatusCode().is2xxSuccessful()) {
+                    LOG.info("Successfully generated a ticket number from the Ticketing Manager");
 
+                    String ticket = ticketResponse.getBody();
+                    CreateTicketResponse response = generateTicketResponse(ticket, ticketRequest);
+
+                    MovieTicket movieTicket = new MovieTicket();
+                    movieTicket.setMovieName(movie.getMovieName());
+                    movieTicket.setShowtime(movie.getShowtime());
+                    movieTicket.setGenre(com.topics.MovieListRequest.Genre.valueOf(movie.getGenre().name()));
+                    movieTicket.setSeat(ticketRequest.getSeatNumber());
+                    movieTicket.setTicketId(ticket);
+
+                    // Searches the DB for an existing ticket with the same movie name, showtime, and seat
+                    List<MovieTicket> exist = postgresService.findByNameTimeSeat(movieTicket.getMovieName(),
+                        movieTicket.getShowtime(), movieTicket.getSeat());
+
+                    for(MovieTicket t : exist) {
+                        if (!t.getMovieName().equals(movieTicket.getMovieName())) {
+                            LOG.info("Existing ticket [{}] movie name '{}' does not match requested movie '{}'",
+                                     t.getTicketId(), t.getMovieName(), movieTicket.getMovieName());
+                            continue;
+                        }
+                        if (!t.getShowtime().isEqual(movieTicket.getShowtime())) {
+                            LOG.info("Existing ticket [{}] showtime '{}' does not match requested showtime '{}'",
+                                     t.getTicketId(), t.getShowtime(), movieTicket.getShowtime());
+                            continue;
+                        }
+                        if (t.getSeat().equals(movieTicket.getSeat())) {
+                            logMessage = "Ticket with ID " + ticket + " already exists for movie "
+                                + movie.getMovieName() + " at showtime " + movie.getShowtime()
+                                + " for seat " + movieTicket.getSeat();
+                            LOG.info(logMessage);
+                            return ResponseEntity.status(409).body(logMessage);
+                        }
+                    }
+
+                    MovieTicket postgresTicket = postgresService.saveTicket(movieTicket);
+                    if(postgresTicket != null) {
+                        LOG.info("Successfully saved the Movie Ticket to the Postgres DB with Ticket ID: " + postgresTicket.getTicketId());
+                        return ResponseEntity.ok(response);
+                    } else {
+                        LOG.error("Failed to save the Movie Ticket to the Postgres DB.");
+                    }
+                } else {
+                    LOG.error("Failed to generate a ticket number from the Ticketing Manager with status code: {}",
+                            ticketResponse.getStatusCode());
+                    logMessage = "Failed to generate a ticket number from the Ticketing Manager.";
+                    return ResponseEntity.status(500).body(logMessage);
+                }
+            }
+            else {
+                logMessage = "The movie " + movie.getMovieName() + " does not have a showtime at " 
+                    + movie.getShowtime();
+                LOG.info("Movie " + movie.getMovieName() + " does not have a showtime at " 
+                    + movie.getShowtime());
+            }
+        }
+        LOG.info("Ticket request was not successful: " + logMessage);
         // Response is sent striaght back to the service orchestrator
-        return postgresSaveResponse.getId() != null ? ResponseEntity.ok("Movie Ticket was successfully processed!")
-                : ResponseEntity.status(500).body("Inernal Error Failed to process MovieRequest");
+        return ResponseEntity.status(500).body(logMessage);
     }
 
 
-    public ResponseEntity<String> processListRequest(MovieListRequest listRequest) {
+    public ResponseEntity<Object> processListRequest(MovieListRequest listRequest) {
         LOG.info("Received a MovieListRequest. ");
 
         // Prepare a response and have the request handle the list
@@ -127,31 +221,12 @@ public class BusinessLogic {
         }
 
         response.setTimestamp(new Date());
-
-        // Asynchronously send the post request to the API Gateway, so that we can
-        // synchhronously respond to the service orchestrator
-        CompletableFuture.runAsync(() -> {
-            try {
-                ResponseEntity<String> apiGatewayResponse = restRouter.get("MovieListResponse")
-                    .post()
-                    .uri(restEndpoints.get(restRouter.get("MovieListResponse")))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(response)
-                    .retrieve()
-                    .toEntity(String.class);
-
-                if (apiGatewayResponse.getStatusCode().is2xxSuccessful()) {
-                    LOG.info("Successfully sent MovieListResponse to API Gateway");
-                } else {
-                    LOG.error("Failed to send MovieListResponse to API Gateway with status code: {}",
-                            apiGatewayResponse.getStatusCode());
-                }
-            } catch (Exception ex) {
-                LOG.error("Error sending MovieListResponse to API Gateway", ex);
-            }
-        });
-
-        return ResponseEntity.accepted().body("MovieListRequest was received... and is being processed.");
+        if(response.getMovies().isEmpty()) {
+            LOG.info("No movies found matching the criteria.");
+        } else {
+            LOG.info("MovieListRequest processed successfully with " + response.getMovies().size() + " movies found.");
+        }
+        return ResponseEntity.accepted().body(response);
     }
 
     private List<Movie> moviesToMovieList(List<Movies> movies) {
@@ -166,4 +241,12 @@ public class BusinessLogic {
         return movieList;
     }
 
+    private CreateTicketResponse generateTicketResponse(String ticket, CreateTicketRequest request) {
+        CreateTicketResponse response = new CreateTicketResponse();
+        response.setTopicName("CreateTicketResponse");
+        response.setCorrelatorId(request.getCorrelatorId());
+        response.setTicketId(Integer.valueOf(ticket));
+        response.setSeatNumber(request.getSeatNumber());
+        return response;
+    }
 }

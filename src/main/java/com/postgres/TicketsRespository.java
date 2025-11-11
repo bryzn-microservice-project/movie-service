@@ -1,8 +1,11 @@
 package com.postgres;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import com.postgres.models.MovieTicket;
-import com.topics.Movie.Genre;
+import com.postgres.models.Movies;
+import com.topics.MovieListRequest.Genre;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,8 +27,18 @@ import java.util.List;
 
 
 // Spring Data JPA creates CRUD implementation at runtime automatically.
-public interface MovieTicketRepository extends JpaRepository<MovieTicket, Long> {
+public interface TicketsRespository extends JpaRepository<MovieTicket, Long> {
 	List<MovieTicket> findByMovieName(String movieName);
     List<MovieTicket> findByShowtimeBetween(LocalDateTime start, LocalDateTime end);
     List<MovieTicket> findByGenre(Genre genre);
+    List<MovieTicket> findByTicketId(String ticketId);
+
+    @Query("""
+    SELECT a
+    FROM MovieTicket a
+    WHERE a.movieName = :movieName
+      AND a.showtime = :showtime
+      AND a.seat = :seat
+    """)
+    List<MovieTicket> findByNameTimeSeat(@Param("movieName") String movieName, @Param("showtime") LocalDateTime showtime, @Param("seat") String seat);
 }
