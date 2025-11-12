@@ -17,6 +17,8 @@ import org.springframework.web.client.RestClient;
 import com.topics.*;
 import com.topics.Movie.Genre;
 import jakarta.annotation.PostConstruct;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.postgres.PostgresService;
 import com.postgres.models.MovieTicket;
 import com.postgres.models.Movies;
@@ -53,9 +55,8 @@ public class BusinessLogic {
     public void init() {
         agw = "http://" + apigateway + ":" + apigatewayPort + "/api/v1/processTopic";
         restEndpoints.put(apiGatewayClient, agw);
-        LOG.info("Business Logic initialized Api Gatway at: " + agw);
+        LOG.info("Business Logic initialized API Gateway at: " + agw);
         restRouter.put("MovieListResponse", apiGatewayClient);
-        restEndpoints.put(apiGatewayClient, agw);
 
         tm = "http://" + ticketManager + ":" + ticketManagerPort + "/api/v1/ticket";
         restEndpoints.put(ticketingManagerClient, tm);
@@ -158,7 +159,7 @@ public class BusinessLogic {
                     MovieTicket postgresTicket = postgresService.saveTicket(movieTicket);
                     if(postgresTicket != null) {
                         LOG.info("Successfully saved the Movie Ticket to the Postgres DB with Ticket ID: " + postgresTicket.getTicketId());
-                        return ResponseEntity.ok(response);
+                        return ResponseEntity.ok(toJson(response));
                     } else {
                         LOG.error("Failed to save the Movie Ticket to the Postgres DB.");
                     }
@@ -248,5 +249,17 @@ public class BusinessLogic {
         response.setTicketId(Integer.valueOf(ticket));
         response.setSeatNumber(request.getSeatNumber());
         return response;
+    }
+
+    // Helper method to serialize an object to JSON string
+    private String toJson(Object obj) {
+        try {
+            // Use Jackson ObjectMapper to convert the object to JSON
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(obj);  // Convert object to JSON string
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return "{\"error\":\"Error processing JSON\"}";
+        }
     }
 }
