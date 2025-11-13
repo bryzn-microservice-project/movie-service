@@ -33,17 +33,8 @@ public class BusinessLogic {
     public final PostgresService postgresService;
 
     // REST Clients to communicate with other microservices
-    private RestClient apiGatewayClient = RestClient.create();
-    private RestClient ticketingManagerClient = RestClient.create();
-
-    private HashMap<String, RestClient> restRouter = new HashMap<>();
+    private final RestClient ticketingManagerClient;
     private HashMap<RestClient, String> restEndpoints = new HashMap<>();
-
-    @Value("${api.gateway}")
-    private String apigateway;
-    @Value("${api.gateway.port}")
-    private String apigatewayPort;
-    private String agw;
 
     @Value("${ticketing.manager}")
     private String ticketManager;
@@ -51,21 +42,17 @@ public class BusinessLogic {
     private String ticketManagerPort;
     private String tm;
 
+    public BusinessLogic(RestClient ticketingManagerClient, PostgresService postgresService) {
+        this.ticketingManagerClient = ticketingManagerClient;
+        this.postgresService = postgresService;
+        mapTopicsToClient();
+    }
+
     @PostConstruct
     public void init() {
-        agw = "http://" + apigateway + ":" + apigatewayPort + "/api/v1/processTopic";
-        restEndpoints.put(apiGatewayClient, agw);
-        LOG.info("Business Logic initialized API Gateway at: " + agw);
-        restRouter.put("MovieListResponse", apiGatewayClient);
-
         tm = "http://" + ticketManager + ":" + ticketManagerPort + "/api/v1/ticket";
         restEndpoints.put(ticketingManagerClient, tm);
         LOG.info("AsyncLogic initialized with Ticketing Manager at: " + tm);
-    }
-
-    public BusinessLogic(PostgresService postgresService) {
-        this.postgresService = postgresService;
-        mapTopicsToClient();
     }
 
     /*
@@ -79,8 +66,6 @@ public class BusinessLogic {
      * # gui-service:8087
      */
     public void mapTopicsToClient() {
-        restRouter.put("MovieListResponse", apiGatewayClient);
-        restEndpoints.put(apiGatewayClient, "http://api-gateway:8081/api/v1/processTopic");
         restEndpoints.put(ticketingManagerClient, "http://ticketing-manager:8088/api/v1/ticket");
         LOG.info("Sucessfully mapped the topics to their respective microservices...");
     }
@@ -90,6 +75,7 @@ public class BusinessLogic {
      * clients
      */
     public ResponseEntity<Object> processTicketRequest(CreateTicketRequest ticketRequest) {
+        System.out.println("\n");
         LOG.info("Received a MovieTicketRequest. ");
 
         // MovieTicket(String movieName, LocalDateTime showtime, Genre genre, String seatNumber, Double price)
@@ -107,7 +93,7 @@ public class BusinessLogic {
         List<Movies> movieCheck = postgresService.findByMovieName(movie.getMovieName());
 
         // Default log message
-        String logMessage = "No move by the title " + movie.getMovieName() + " was found...";
+        String logMessage = "No movie by the title " + movie.getMovieName() + " was found...";
         for(Movies m : movieCheck) {
             if(m.getShowtime().isEqual(movie.getShowtime())) {
                 LOG.info("The movie [" + movie.getMovieName() + "] found at the requested showtime " + movie.getShowtime());
@@ -162,6 +148,7 @@ public class BusinessLogic {
                         return ResponseEntity.ok(toJson(response));
                     } else {
                         LOG.error("Failed to save the Movie Ticket to the Postgres DB.");
+                        logMessage = "Failed to save the Movie Ticket to the Postgres DB.";
                     }
                 } else {
                     LOG.error("Failed to generate a ticket number from the Ticketing Manager with status code: {}",
@@ -184,6 +171,7 @@ public class BusinessLogic {
 
 
     public ResponseEntity<Object> processListRequest(MovieListRequest listRequest) {
+        System.out.println("\n");
         LOG.info("Received a MovieListRequest. ");
 
         // Prepare a response and have the request handle the list
@@ -227,7 +215,7 @@ public class BusinessLogic {
         } else {
             LOG.info("MovieListRequest processed successfully with " + response.getMovies().size() + " movies found.");
         }
-        return ResponseEntity.accepted().body(response);
+        return ResponseEntity.accepted().body(toJson(response));
     }
 
     private List<Movie> moviesToMovieList(List<Movies> movies) {
@@ -248,6 +236,7 @@ public class BusinessLogic {
         response.setCorrelatorId(request.getCorrelatorId());
         response.setTicketId(Integer.valueOf(ticket));
         response.setSeatNumber(request.getSeatNumber());
+        response.setMovie(request.getMovie());
         return response;
     }
 
