@@ -39,26 +39,10 @@ class SchemaValidatorTest {
         """);
 
         // Testing with a dynamically loaded schema from the SchemaService
-        String topicName = "MovieListRequest";  // Example schema topic name
-        URL schemaUrl = getClass().getClassLoader().getResource(SchemaService.getPathFor(topicName));
-
-        // Check if the schema is found
-        if (schemaUrl == null) {
-            throw new RuntimeException("Schema not found for topic: " + topicName);
-        }
-
-        // Load schema stream from resource
-        InputStream schemaStream = schemaValidator.getSchemaStream(SchemaService.getPathFor(topicName));
-
-        if (schemaStream == null) {
-            System.out.println("No schema found for topic: " + topicName);
-        }
-
-        // Validate the JSON using the schema stream
-        boolean result = schemaValidator.validateJson(schemaStream, validJson);
+        String topicName = "MovieListRequest";  
 
         // Assert the validation result (assuming valid schema)
-        Assertions.assertTrue(result);
+        Assertions.assertTrue(validate(topicName, validJson));
     }
 
     @Test
@@ -73,26 +57,10 @@ class SchemaValidatorTest {
         """);
 
         // Testing with a dynamically loaded schema from the SchemaService
-        String topicName = "MovieListRequest";  // Example schema topic name
-        URL schemaUrl = getClass().getClassLoader().getResource(SchemaService.getPathFor(topicName));
-
-        // Check if the schema is found
-        if (schemaUrl == null) {
-            throw new RuntimeException("Schema not found for topic: " + topicName);
-        }
-
-        // Load schema stream from resource
-        InputStream schemaStream = schemaValidator.getSchemaStream(SchemaService.getPathFor(topicName));
-
-        if (schemaStream == null) {
-            System.out.println("No schema found for topic: " + topicName);
-        }
-
-        // Validate the JSON using the schema stream
-        boolean result = schemaValidator.validateJson(schemaStream, validJson);
+        String topicName = "MovieListRequest";  
 
         // Assert the validation result (assuming valid schema)
-        Assertions.assertTrue(result);
+        Assertions.assertTrue(validate(topicName, validJson));
     }
 
     @Test
@@ -108,26 +76,10 @@ class SchemaValidatorTest {
         """);
 
         // Testing with a dynamically loaded schema from the SchemaService
-        String topicName = "MovieListRequest";  // Example schema topic name
-        URL schemaUrl = getClass().getClassLoader().getResource(SchemaService.getPathFor(topicName));
-
-        // Check if the schema is found
-        if (schemaUrl == null) {
-            throw new RuntimeException("Schema not found for topic: " + topicName);
-        }
-
-        // Load schema stream from resource
-        InputStream schemaStream = schemaValidator.getSchemaStream(SchemaService.getPathFor(topicName));
-
-        if (schemaStream == null) {
-            System.out.println("No schema found for topic: " + topicName);
-        }
-
-        // Validate the JSON using the schema stream
-        boolean result = schemaValidator.validateJson(schemaStream, validJson);
+        String topicName = "MovieListRequest";  
 
         // Assert the validation result (assuming valid schema)
-        Assertions.assertTrue(result);
+        Assertions.assertTrue(validate(topicName, validJson));
     }
 
     @Test
@@ -140,7 +92,14 @@ class SchemaValidatorTest {
         """);
         
         // Testing with a dynamically loaded schema from the SchemaService
-        String topicName = "MovieListRequest";  // Example schema topic name
+        String topicName = "MovieListRequest";  
+
+        // Assert the validation result (assuming valid schema)
+        Assertions.assertFalse(validate(topicName, validJson));
+    }
+
+    private boolean validate(String topicName, JSONObject validJson)
+    {
         URL schemaUrl = getClass().getClassLoader().getResource(SchemaService.getPathFor(topicName));
 
         // Check if the schema is found
@@ -156,9 +115,6 @@ class SchemaValidatorTest {
         }
 
         // Validate the JSON using the schema stream
-        boolean result = schemaValidator.validateJson(schemaStream, validJson);
-
-        // Assert the validation result (assuming valid schema)
-        Assertions.assertFalse(result);
+        return schemaValidator.validateJson(schemaStream, validJson);
     }
 }
