@@ -45,14 +45,13 @@ public class BusinessLogic {
     public BusinessLogic(RestClient ticketingManagerClient, PostgresService postgresService) {
         this.ticketingManagerClient = ticketingManagerClient;
         this.postgresService = postgresService;
-        mapTopicsToClient();
     }
 
     @PostConstruct
     public void init() {
         tm = "http://" + ticketManager + ":" + ticketManagerPort + "/api/v1/ticket";
         restEndpoints.put(ticketingManagerClient, tm);
-        LOG.info("AsyncLogic initialized with Ticketing Manager at: " + tm);
+        LOG.info("BusinessLogic initialized with Ticketing Manager at: " + tm);
     }
 
     /*
@@ -65,10 +64,6 @@ public class BusinessLogic {
      * # user-management-service:8086
      * # gui-service:8087
      */
-    public void mapTopicsToClient() {
-        restEndpoints.put(ticketingManagerClient, "http://ticketing-manager:8088/api/v1/ticket");
-        LOG.info("Sucessfully mapped the topics to their respective microservices...");
-    }
 
     /*
      * Request handlers for the various topics, which communicate through REST

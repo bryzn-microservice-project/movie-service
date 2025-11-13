@@ -5,7 +5,9 @@ import java.net.URL;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -28,7 +30,9 @@ class SchemaValidatorTest {
     }
 
     @Test
-    void testMovieListRequest1() throws Exception {
+    @DisplayName("[SCHEMA] Valid MovieListRequest (genre)")
+    void testMovieListRequest1(TestInfo testInfo) throws Exception {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
         // JSON that satisfies the schema
         JSONObject validJson = new JSONObject("""
             {
@@ -46,7 +50,9 @@ class SchemaValidatorTest {
     }
 
     @Test
-    void testMovieListRequest2() throws Exception {
+    @DisplayName("[SCHEMA] Valid MovieListRequest (movie name)")
+    void testMovieListRequest2(TestInfo testInfo) throws Exception {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
         // JSON that satisfies the schema
         JSONObject validJson = new JSONObject("""
             {
@@ -64,7 +70,9 @@ class SchemaValidatorTest {
     }
 
     @Test
-    void testMovieListRequest3() throws Exception {
+    @DisplayName("[SCHEMA] Valid MovieListRequest (start/end time)")
+    void testMovieListRequest3(TestInfo testInfo) throws Exception {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
         // JSON that satisfies the schema
         JSONObject validJson = new JSONObject("""
             {
@@ -83,7 +91,9 @@ class SchemaValidatorTest {
     }
 
     @Test
-    void testInvalidJson() throws Exception {
+    @DisplayName("[SCHEMA] Invalid MovieListRequest (missing)")
+    void testInvalidJson(TestInfo testInfo) throws Exception {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
         JSONObject validJson = new JSONObject("""
             {
                 "topicName": "MovieListRequest",

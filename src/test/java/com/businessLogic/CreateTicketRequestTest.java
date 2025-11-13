@@ -7,17 +7,22 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +44,9 @@ public class CreateTicketRequestTest {
 	private ObjectMapper objectMapper = new ObjectMapper();
 
 	@Test
-	public void createTicket1Test() {
+	@DisplayName("[BUSINESS_LOGIC] Valid CreateTicketRequest/Invalid Duplicate")
+	public void createTicket1Test(TestInfo testInfo) {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
 		String JSON = """
 			{
 				"topicName": "CreateTicketRequest",
@@ -94,10 +101,10 @@ public class CreateTicketRequestTest {
 		RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
 		RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 		when(ticketingManagerClient.post()).thenReturn(requestBodyUriSpec);
-		when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-		when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
+		when(requestBodyUriSpec.uri(ArgumentMatchers.<String>any())).thenReturn(requestBodySpec);  // this line is crucial, or else URI error
+		when(requestBodySpec.contentType(any(MediaType.class))).thenReturn(requestBodySpec); // chainable
 		when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-		when(responseSpec.toEntity(any(Class.class))).thenReturn(ResponseEntity.ok("8060000"));
+		when(responseSpec.toEntity(String.class)).thenReturn(ResponseEntity.ok("8060000"));
 
 		ResponseEntity<Object> httpResponse = businessLogic.processTicketRequest(request);
 		CreateTicketResponse response = null;	

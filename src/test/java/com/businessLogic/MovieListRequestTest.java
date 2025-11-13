@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Date;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -32,7 +34,9 @@ public class MovieListRequestTest {
 	private ObjectMapper objectMapper = new ObjectMapper();
 
 	@Test
-	public void movieGenreRequestTest() {
+	@DisplayName("[BUSINESS_LOGIC] Valid MovieListRequest (genre)")
+	public void movieGenreRequestTest(TestInfo testInfo) {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
 		String JSON = """
 			{
 				"topicName": "MovieListRequest",
@@ -91,7 +95,9 @@ public class MovieListRequestTest {
 	}
 
 	@Test
-	public void movieNameRequestTest() {
+	@DisplayName("[BUSINESS_LOGIC] Valid MovieListRequest (movie name)")
+	public void movieNameRequestTest(TestInfo testInfo) {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
 		String JSON = """
 			{
 				"topicName": "MovieListRequest",
@@ -156,7 +162,9 @@ public class MovieListRequestTest {
 	}
 
 	@Test
-	public void movieShowtimeRequestTest() {
+	@DisplayName("[BUSINESS_LOGIC] Valid MovieListRequest (start/end time)")
+	public void movieShowtimeRequestTest(TestInfo testInfo) {
+        System.out.println("\n-----------Running: " + testInfo.getDisplayName() + "-----------");
 		String JSON = """
 			{
 				"topicName": "MovieListRequest",
