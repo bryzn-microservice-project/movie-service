@@ -31,7 +31,6 @@ public class SchemaValidator {
         boolean valid = false;
         try {
             JSONObject rawSchema = new JSONObject(new JSONTokener(schemaStream));
-
             Schema schema = SchemaLoader.builder()
                     .schemaJson(rawSchema)
                     .resolutionScope("classpath:/" + SCHEMA_BASE_PATH)
