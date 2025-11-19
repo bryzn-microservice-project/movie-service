@@ -129,9 +129,7 @@ public class CreateTicketRequestTest {
 			@SuppressWarnings("null")
 			String body = httpResponse2.getBody().toString();
 			if (isString(body)) {
-				// Handle the string case (you can log it, throw an exception, or handle accordingly)
 				System.out.println("\n" + httpResponse2.getBody());
-				// Optionally, create a default or error response here
 			} else {
 				response = objectMapper.readValue(body, CreateTicketResponse.class);
 			}

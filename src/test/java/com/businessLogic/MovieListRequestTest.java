@@ -78,9 +78,7 @@ public class MovieListRequestTest {
 			@SuppressWarnings("null")
 			String body = httpResponse.getBody().toString();
 			if (isString(body)) {
-				// Handle the string case (you can log it, throw an exception, or handle accordingly)
 				System.out.println("\n" + httpResponse.getBody());
-				// Optionally, create a default or error response here
 			} else {
 				response = objectMapper.readValue(body, MovieListResponse.class);
 			}
@@ -140,9 +138,7 @@ public class MovieListRequestTest {
 			@SuppressWarnings("null")
 			String body = httpResponse.getBody().toString();
 			if (isString(body)) {
-				// Handle the string case (you can log it, throw an exception, or handle accordingly)
 				System.out.println("\n" + httpResponse.getBody());
-				// Optionally, create a default or error response here
 			} else {
 				response = objectMapper.readValue(body, MovieListResponse.class);
 			}
@@ -222,9 +218,7 @@ public class MovieListRequestTest {
 			@SuppressWarnings("null")
 			String body = httpResponse.getBody().toString();
 			if (isString(body)) {
-				// Handle the string case (you can log it, throw an exception, or handle accordingly)
 				System.out.println("\n" + httpResponse.getBody());
-				// Optionally, create a default or error response here
 			} else {
 				response = objectMapper.readValue(body, MovieListResponse.class);
 			}
