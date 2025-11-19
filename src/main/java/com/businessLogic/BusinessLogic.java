@@ -2,6 +2,7 @@ package com.businessLogic;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestClient;
 import com.topics.*;
 import com.topics.Movie.Genre;
 import jakarta.annotation.PostConstruct;
+import com.controller.MainController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.postgres.PostgresService;
@@ -29,6 +31,8 @@ import com.postgres.models.Movies;
  */
 @Service
 public class BusinessLogic {
+
+    private final MainController mainController;
     private static final Logger LOG = LoggerFactory.getLogger(BusinessLogic.class);
     public final PostgresService postgresService;
 
@@ -42,9 +46,10 @@ public class BusinessLogic {
     private String ticketManagerPort;
     private String tm;
 
-    public BusinessLogic(RestClient ticketingManagerClient, PostgresService postgresService) {
+    public BusinessLogic(RestClient ticketingManagerClient, PostgresService postgresService, MainController mainController) {
         this.ticketingManagerClient = ticketingManagerClient;
         this.postgresService = postgresService;
+        this.mainController = mainController;
     }
 
     @PostConstruct
@@ -153,6 +158,7 @@ public class BusinessLogic {
                 }
             }
             else {
+                System.out.println(m.getShowtime() + " " + (movie.getShowtime()));
                 logMessage = "The movie " + movie.getMovieName() + " does not have a showtime at " 
                     + movie.getShowtime();
                 LOG.info("Movie " + movie.getMovieName() + " does not have a showtime at " 

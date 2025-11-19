@@ -3,16 +3,19 @@ package com.businessLogic;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
-import java.net.URI;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -43,6 +46,11 @@ public class CreateTicketRequestTest {
     private RestClient ticketingManagerClient; 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
+	@BeforeAll
+	static void setUp() {
+		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+	}
+
 	@Test
 	@DisplayName("[BUSINESS_LOGIC] Valid CreateTicketRequest/Invalid Duplicate")
 	public void createTicket1Test(TestInfo testInfo) {
@@ -53,7 +61,7 @@ public class CreateTicketRequestTest {
 				"correlatorId": 5557,
 				"movie": {
 					"movieName": "Inception",
-					"showtime": "2025-11-10T19:30:00-06:00",
+					"showtime": "2025-11-10T21:45:00-06:00",
 					"genre": "SCIFI"
 				},
 				"seatNumber": "C5"
@@ -67,7 +75,19 @@ public class CreateTicketRequestTest {
 			e.printStackTrace();
 		}
 
-		LocalDateTime showtime = LocalDateTime.of(2025, 11, 10, 19, 30, 0); // Nov 10, 2025 7:30 PM
+		ZoneId cst;
+		try {
+			cst = ZoneId.of("America/Chicago");
+		} catch (DateTimeException e) {
+			cst = ZoneId.of("US/Central"); // fallback for Windows
+		}
+		ZoneId utc = ZoneId.of("UTC");
+
+		// Create a ZonedDateTime in CST
+		ZonedDateTime showtimeCST = ZonedDateTime.of(2025, 11, 10, 21, 45, 0, 0, cst);
+
+		// Convert it to the same instant in UTC, then to LocalDateTime
+		LocalDateTime showtime = showtimeCST.withZoneSameInstant(utc).toLocalDateTime();
 
 		Movies movie1 = new Movies();
 		movie1.setMovieName("Inception");
@@ -109,7 +129,13 @@ public class CreateTicketRequestTest {
 		ResponseEntity<Object> httpResponse = businessLogic.processTicketRequest(request);
 		CreateTicketResponse response = null;	
 		try{
-			response = objectMapper.readValue(httpResponse.getBody().toString(), CreateTicketResponse.class);
+			@SuppressWarnings("null")
+			String body = httpResponse.getBody().toString();
+			if (isString(body)) {
+				System.out.println("\n" + httpResponse.getBody());
+			} else {
+				response = objectMapper.readValue(body, CreateTicketResponse.class);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
