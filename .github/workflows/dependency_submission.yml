@@ -14,15 +14,23 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+
+      # Set up JDK (21 in your case) and configure Maven settings
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          server-id: github
+          server-id: github             
           settings-path: ${{ github.workspace }}
           cache: maven
+
+      # Run the dependency submission action
       - name: Submit dependencies
         uses: advanced-security/maven-dependency-submission-action@v4
         with:
-          token: ${{ secrets.MAVEN_PASSWORD }}
+          token: ${{ secrets.GITHUB_TOKEN }}   # built-in token
+          maven-executable: mvn                # use system Maven
+        env:
+          MAVEN_USERNAME: ${{ github.actor }}  # auto-provided by Actions
+          MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}  # built-in token
